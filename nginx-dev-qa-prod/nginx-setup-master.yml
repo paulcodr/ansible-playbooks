@@ -1,0 +1,11 @@
+---
+
+# You must assign a value to variable   website_url   using   --extra-vars.
+# Example below:
+# ansible-playbook --extra-vars "website_url=yours.com" ~/codes/ansible/playbooks-ansible/httpd/httpd-setup-master.yml -i ~/codes/ansible/hosts-file
+
+- include: nginx-rpms.yml
+- include: nginx-config-prod-site.yml
+- include: nginx-config-dev-site.yml
+- include: nginx-config-qa-site.yml
+- include: nginx-start-service.yml

@@ -1,0 +1,40 @@
+---
+# Let's Encrypt does not support multiple VirtualHosts in one config file.
+
+- hosts: all
+  become: yes
+
+  tasks:
+
+  - name: Test if variable "website_url" has a valid URL.
+    fail:
+      msg: 'Please include    --extra-vars "website_url=yourURL.com"   with your   ansible-playbook   command and try again.'
+    when: website_url is not defined
+
+  - name: Create directory
+    file: path={{ item }} state=directory owner=nginx group=nginx mode=0755
+    with_items:
+    - /data/www/{{ website_url }}/dev.{{ website_url }}/
+
+  - name: Copy NGINX config file for production site to set up Server Block
+    copy: src=assets/nginx-server-block-tmpl.conf dest=/etc/nginx/sites-available/dev.{{ website_url }}.conf owner=nginx group=nginx mode=0644 backup=yes
+
+  - name: Update Nginx Doc Root to /data/www/{{ website_url }}/dev.{{ website_url }}.
+    replace: dest=/etc/nginx/sites-available/dev.{{ website_url }}.conf regexp='/data/www/templateurl/templateurl' replace='/data/www/{{ website_url }}/dev.{{ website_url }}' backup=yes
+
+  - name: Update server_name to dev.{{ website_url }}.
+    replace: dest=/etc/nginx/sites-available/dev.{{ website_url }}.conf regexp='server_name  templateurl' replace='server_name  dev.{{ website_url }}' backup=no
+
+  - name: Create symlink in /etc/nginx/sites-enabled/ to activate the nginx Server Block.
+    file: src=/etc/nginx/sites-available/dev.{{ website_url }}.conf dest=/etc/nginx/sites-enabled/dev.{{ website_url }}.conf state=link
+
+  - name: Ensure index.html exists
+    copy: content="" dest=/data/www/{{ website_url }}/dev.{{ website_url }}/index.html force=no owner=nginx group=nginx mode=u=rwX,g=rX,o=rX
+    register: index_created
+
+  - name: Add Hello World to  index.html ONLY if it was created by this Ansible playbook.
+    lineinfile: dest=/data/www/{{ website_url }}/dev.{{ website_url }}/index.html line='Hello World - powered by nginx - DEV site of site.com' state=present
+    when: index_created.changed
+
+  - name: Update permission of /data/www/{{ website_url }}/dev.{{ website_url }}
+    file: path=/data/www/{{ website_url }}/dev.{{ website_url }} owner=nginx group=nginx mode=u=rwX,g=rX,o=rX recurse=yes

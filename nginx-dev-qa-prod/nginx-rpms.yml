@@ -1,0 +1,44 @@
+---
+# Let's Encrypt does not support multiple Vhost in one config file.
+# For this reason, each Vhost sits in separate Vhost config file.
+
+- hosts: all
+  become: yes
+
+  tasks:
+    - name: Test if variable "website_url" has a valid URL.
+      fail:
+        msg: 'Please include    --extra-vars "website_url=yourURL.com"   with your   ansible-playbook   command and try again.'
+      when: website_url is not defined
+
+    - name: Install epel-release rpm.
+      yum: name={{ item }} state=present
+      with_items:
+      - epel-release
+
+# epel-release rpm needs to be installed in a separate step before nginx can be installed.
+
+    - name: Install nginx rpm.
+      yum: name={{ item }} state=present
+      with_items:
+      - nginx
+
+    - name: Create 3 directories /etc/nginx/sites-available  &  /etc/nginx/sites-enabled
+      file: path={{ item }} state=directory owner=nginx group=nginx mode=0644
+      with_items:
+      - /etc/nginx/sites-available
+      - /etc/nginx/sites-enabled
+
+    - name: insert/update HTML surrounded by custom markers after <body> line
+      blockinfile:
+        dest: /etc/nginx/nginx.conf
+        marker: "# <!-- {mark} ANSIBLE MANAGED BLOCK -->"
+        insertbefore: "^# Settings for a TLS enabled server.$"
+        content: |
+              include /etc/nginx/sites-enabled/*.conf;
+
+    - name: Update permission of /etc/nginx
+      file: path=/etc/nginx owner=nginx group=nginx mode=u=rwX,g=rX,o=rX recurse=yes
+
+    - name: Enable auto start of nginx service. Start nginx service
+      service: name=nginx state=restarted enabled=yes
