@@ -18,7 +18,7 @@ Copy folder nginx-dev-qa-prod/ to ~/ansible-playbook/nginx-dev-qa-prod/ or any o
 To deploy the 3 URLs, only following command needs to be executed. Subsitute site.com with URL of your choice, such as mysite.com or secure.mysite.com.
 Note --extra-vars. I picked this over using vars.yml because it's more flexible.
 ```
-ansible-playbook --extra-vars "website_url=site.com" ~/ansible-playbook/nginx-dev-qa-prod/nginx-setup-master.yml -i ~/codes/ansible/hosts-file
+ansible-playbook --extra-vars "website_url=site.com" ~/ansible-playbook/nginx-dev-qa-prod/nginx-setup-master.yml -i ~/ansible/hosts-file
 ```
 
 
